@@ -3,16 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script async src="https://www.googletagmanager.com/gtm.js?id=GTM-WWMD672P"></script>
+<!-- Google Analytics: 新しいGA4の測定IDを入れる場合は、下のコメントを外して G-XXXXXXXXXX を差し替えてください
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
 </script>
+-->
 <title>混沌の終末トレーナー 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
+/* Layout: full-window 3D view; HUD pinned to corners like a game client. Single dark look by choice. */
 :root{
   --bg:#0d0b14; --panel:rgba(22,18,34,.86); --line:#3a3052; --fg:#ece6f5; --muted:#a59cb8;
   --flare:#ff8a3d; --tele:#ff5470; --safe:#5fd3a8; --violet:#9b7bff;
@@ -33,7 +37,15 @@ body{font-family:var(--body);line-height:1.5;user-select:none}
 .tl p{margin:4px 0 0;font-size:.8rem;color:var(--muted)}
 kbd{font-family:var(--mono);font-size:.72rem;border:1px solid var(--line);border-radius:4px;padding:0 4px;color:var(--fg)}
 .tr{top:calc(14px + env(safe-area-inset-top,0px));right:calc(14px + env(safe-area-inset-right,0px));display:grid;gap:10px;justify-items:end}
-.settings{display:grid;gap:8px;width:230px}
+.settings{width:230px}
+.settings .inner{display:grid;gap:8px;margin-top:8px}
+.help .inner{display:grid;gap:4px;margin-top:8px}
+summary.fold{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:.85rem}
+summary.fold::-webkit-details-marker{display:none}
+summary.fold::before{content:"▸";color:var(--muted);font-size:.8rem;transition:transform .15s}
+details[open]>summary.fold::before{transform:rotate(90deg)}
+.copySum{margin-left:auto;font-size:.66rem;color:var(--muted);font-weight:400}
+@media (prefers-reduced-motion: reduce){summary.fold::before{transition:none}}
 .settings h3{margin:0;font-size:.72rem;letter-spacing:.14em;color:var(--muted);font-weight:500}
 label.row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:.85rem}
 input[type=checkbox]{accent-color:var(--flare);width:16px;height:16px}
@@ -81,7 +93,7 @@ button.ghost{background:transparent;color:var(--fg);border-color:var(--line);fon
 .slot span{color:var(--muted);font-size:.75rem;font-variant-numeric:tabular-nums;flex:1;min-width:0}
 .slot button{font-size:.75rem;padding:2px 8px}
 .slot button.warn{border-color:var(--tele);color:var(--tele)}
-.help{bottom:calc(40px + env(safe-area-inset-bottom,0px));left:calc(14px + env(safe-area-inset-left,0px));max-width:300px;display:grid;gap:4px}
+.help{bottom:calc(40px + env(safe-area-inset-bottom,0px));left:calc(14px + env(safe-area-inset-left,0px));width:300px;max-width:300px}
 .help p{margin:0 0 6px;font-size:.8rem;color:var(--muted)}
 .help .notice{margin:4px 0 0;padding-top:6px;border-top:1px solid var(--line);font-size:.66rem;line-height:1.45;color:var(--muted)}
 .help .notice summary{cursor:pointer;font-size:.72rem}
@@ -97,27 +109,30 @@ button.ghost{background:transparent;color:var(--fg);border-color:var(--line);fon
 
 <div class="hud compass" id="compass"><div class="strip" id="strip"></div></div>
 
-<div class="hud panel tl">
-  <h1>混沌の終末 3D</h1>
+<details class="hud panel tl" id="pnlSave" data-fold open>
+  <summary class="fold"><h1>混沌の終末 3D</h1></summary>
   <div class="slots" id="slots">
     <h3 class="slotsTitle">設定の保存</h3>
     <div id="slotList"></div>
     <p class="derived" id="slotMsg">エクサ調整・カメラ・マーカー・自機・ボス・表示設定をまとめて保存します。</p>
   </div>
-</div>
+</details>
 
-<div class="hud panel help">
+<details class="hud panel help" id="pnlHelp" data-fold open>
+  <summary class="fold"><b>操作・注意事項</b><span class="copySum">© SQUARE ENIX</span></summary>
+  <div class="inner">
   <h3 class="slotsTitle">操作（キーボード・マウス）</h3>
   <p><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移動（スタンダード）・右ドラッグ でカメラ回転・ホイール でズーム・左右同時押し で前進・<kbd>Space</kbd> エクサ開始</p>
   <h3 class="slotsTitle">操作（コントローラー）</h3>
   <p>左スティック 移動・右スティック カメラ・十字キー上下 ズーム・×/A または OPTIONS/START で開始。接続後、ボタンを一度押すと認識されます</p>
   <details class="notice" id="noticeBox"><summary>注意事項（非公式ツールです）</summary><p>非公式のファンメイド練習ツールです。株式会社スクウェア・エニックスおよびファイナルファンタジーXIVの公式とは関係ありません。非営利で公開しており、広告・寄付の募集・有料化は行いません。権利者から要請があった場合は速やかに公開を停止します。ゲーム内名称の利用は「ファイナルファンタジーXIV 著作物利用条件」に基づくもので、日本国内向けに公開しています。ブラウザ上だけで動作し、ゲーム本体には一切接続・干渉しません。エクサの速度・大きさ・判定などは動画からの推定値で、本番と完全には一致しません。光の点滅や画面の揺れがあります（揺れは設定でオフにできます）。<span id="gaNote" hidden>アクセス解析にGoogleアナリティクスを使用しています。</span></p></details>
-  <p class="copy">© SQUARE ENIX</p>
-</div>
+  </div>
+</details>
 
 <div class="hud tr">
-  <div class="panel settings">
-    <h3>設定</h3>
+  <details class="panel settings" id="pnlSettings" data-fold open>
+    <summary class="fold"><b>設定</b></summary>
+    <div class="inner">
     <label class="row" for="sens">カメラ感度 <input id="sens" type="range" min="0.3" max="2" step="0.1" value="1"></label>
     <label class="row" for="padSens">パッドのカメラ感度 <input id="padSens" type="range" min="0.3" max="2.5" step="0.1" value="1"></label>
     <label class="row" for="padInvert">パッドの上下を反転 <input id="padInvert" type="checkbox"></label>
@@ -131,7 +146,8 @@ button.ghost{background:transparent;color:var(--fg);border-color:var(--line);fon
     <label class="row" for="optHitbox">当たり判定を表示 <input id="optHitbox" type="checkbox"></label>
     <label class="row" for="optEndless">エンドレスモード <input id="optEndless" type="checkbox"></label>
     <label class="row" for="optNofail">被弾しても続行 <input id="optNofail" type="checkbox"></label>
-  </div>
+    </div>
+  </details>
   <details class="panel camset" id="camPanel">
     <summary>カメラ・マーカー・自機・ボス調整</summary>
     <h4>初期カメラ</h4>
@@ -787,6 +803,11 @@ function updateHUD(){
   $('info').textContent=(pad.connected?'パッド接続中　':(pad.blocked?'この環境ではパッドを読めません　':''))+(run.active?(run.endless?`エンドレス ${shown}本目（ベスト ${endlessBest()}本）　`:`エクサ ${shown}/6　`):'')+`中心から ${d.toFixed(1)}y`+(run.hits&&$('optNofail').checked?`　被弾 ${run.hits}`:'');
 }
 
+// ---------- collapsible windows: remember open/closed per viewer ----------
+for(const d of document.querySelectorAll('details[id]')){
+  try{ const v=localStorage.getItem('exa3dFold:'+d.id); if(v!==null) d.open=v==='1'; }catch(e){}
+  d.addEventListener('toggle',()=>{ try{localStorage.setItem('exa3dFold:'+d.id,d.open?'1':'0');}catch(e){} });
+}
 // ---------- save slots (Save01-05) ----------
 const SLOT_KEY='exa3dSlots', SLOT_N=5;
 function readSlots(){ try{const s=JSON.parse(localStorage.getItem(SLOT_KEY)||'null'); if(Array.isArray(s)) return s.slice(0,SLOT_N).concat(Array(SLOT_N).fill(null)).slice(0,SLOT_N);}catch(e){} return Array(SLOT_N).fill(null); }
