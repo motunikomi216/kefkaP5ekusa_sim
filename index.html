@@ -87,7 +87,11 @@ button.ghost{background:transparent;color:var(--fg);border-color:var(--line);fon
 .slot button.warn{border-color:var(--tele);color:var(--tele)}
 .help{bottom:calc(40px + env(safe-area-inset-bottom,0px));left:calc(14px + env(safe-area-inset-left,0px));max-width:300px;display:grid;gap:4px}
 .help p{margin:0 0 6px;font-size:.8rem;color:var(--muted)}
-.help p.notice{margin:4px 0 0;padding-top:6px;border-top:1px solid var(--line);font-size:.66rem;line-height:1.45;opacity:.85}
+.help .notice{margin:4px 0 0;padding-top:6px;border-top:1px solid var(--line);font-size:.66rem;line-height:1.45;color:var(--muted)}
+.help .notice summary{cursor:pointer;font-size:.72rem}
+.help .notice p{margin:4px 0 0;font-size:.66rem;opacity:.85}
+.help p.copy{margin:2px 0 0;font-size:.66rem;opacity:.85}
+.help{max-height:calc(100vh - 380px);overflow-y:auto}
 #loadErr{position:fixed;inset:0;display:grid;place-items:center;text-align:center;padding:24px}
 </style>
 </head>
@@ -111,7 +115,8 @@ button.ghost{background:transparent;color:var(--fg);border-color:var(--line);fon
   <p><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移動（スタンダード）・右ドラッグ でカメラ回転・ホイール でズーム・左右同時押し で前進・<kbd>Space</kbd> エクサ開始</p>
   <h3 class="slotsTitle">操作（コントローラー）</h3>
   <p>左スティック 移動・右スティック カメラ・十字キー上下 ズーム・×/A または OPTIONS/START で開始。接続後、ボタンを一度押すと認識されます</p>
-  <p class="notice">非公式のファンメイド練習ツールです。株式会社スクウェア・エニックスおよびファイナルファンタジーXIVの公式とは関係ありません。非営利で公開しており、広告・寄付の募集・有料化は行いません。権利者から要請があった場合は速やかに公開を停止します。ゲーム内名称の利用は「ファイナルファンタジーXIV 著作物利用条件」に基づくもので、日本国内向けに公開しています。ブラウザ上だけで動作し、ゲーム本体には一切接続・干渉しません。エクサの速度・大きさ・判定などは動画からの推定値で、本番と完全には一致しません。光の点滅や画面の揺れがあります（揺れは設定でオフにできます）。<span id="gaNote" hidden>アクセス解析にGoogleアナリティクスを使用しています。</span><br>© SQUARE ENIX</p>
+  <details class="notice" id="noticeBox"><summary>注意事項（非公式ツールです）</summary><p>非公式のファンメイド練習ツールです。株式会社スクウェア・エニックスおよびファイナルファンタジーXIVの公式とは関係ありません。非営利で公開しており、広告・寄付の募集・有料化は行いません。権利者から要請があった場合は速やかに公開を停止します。ゲーム内名称の利用は「ファイナルファンタジーXIV 著作物利用条件」に基づくもので、日本国内向けに公開しています。ブラウザ上だけで動作し、ゲーム本体には一切接続・干渉しません。エクサの速度・大きさ・判定などは動画からの推定値で、本番と完全には一致しません。光の点滅や画面の揺れがあります（揺れは設定でオフにできます）。<span id="gaNote" hidden>アクセス解析にGoogleアナリティクスを使用しています。</span></p></details>
+  <p class="copy">© SQUARE ENIX</p>
 </div>
 
 <div class="hud tr">
