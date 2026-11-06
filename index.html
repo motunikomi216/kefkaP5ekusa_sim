@@ -3,12 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script async src="https://www.googletagmanager.com/gtm.js?id=GTM-WWMD672P"></script>
+<!-- Google Analytics: 新しいGA4の測定IDを入れる場合は、下のコメントを外して G-XXXXXXXXXX を差し替えてください
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
 </script>
+-->
 <title>混沌の終末トレーナー 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
@@ -97,6 +100,8 @@ button.ghost{background:transparent;color:var(--fg);border-color:var(--line);fon
 .help .notice p{margin:4px 0 0;font-size:.66rem;opacity:.85}
 .help p.copy{margin:2px 0 0;font-size:.66rem;opacity:.85}
 .help{max-height:calc(100vh - 380px);overflow-y:auto}
+.fps{top:calc(48px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:.8rem;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-variant-numeric:tabular-nums}
+.lite .panel{backdrop-filter:none;background:rgba(22,18,34,.96)}
 #loadErr{position:fixed;inset:0;display:grid;place-items:center;text-align:center;padding:24px}
 </style>
 </head>
@@ -130,6 +135,10 @@ button.ghost{background:transparent;color:var(--fg);border-color:var(--line);fon
   <details class="panel settings" id="pnlSettings" data-fold open>
     <summary class="fold"><b>設定</b></summary>
     <div class="inner">
+    <label class="row" for="optQuality">画質
+      <select id="optQuality"><option value="high" selected>高画質</option><option value="lite">軽量</option></select>
+    </label>
+    <label class="row" for="optFps">FPS表示 <input id="optFps" type="checkbox"></label>
     <label class="row" for="sens">カメラ感度 <input id="sens" type="range" min="0.3" max="2" step="0.1" value="1"></label>
     <label class="row" for="padSens">パッドのカメラ感度 <input id="padSens" type="range" min="0.3" max="2.5" step="0.1" value="1"></label>
     <label class="row" for="padInvert">パッドの上下を反転 <input id="padInvert" type="checkbox"></label>
@@ -186,6 +195,7 @@ button.ghost{background:transparent;color:var(--fg);border-color:var(--line);fon
 </div>
 
 <div class="hud casts" id="casts"></div>
+<div class="hud fps" id="fps" hidden>-- FPS</div>
 <div class="hud bl" id="info"></div>
 
 <details class="hud panel br" id="tune">
@@ -246,7 +256,9 @@ const laneOffset=i=>(i-(LANES-1)/2)*LANE_W;
 
 // ---------- renderer / scene ----------
 const view=$('view');
-const renderer=new THREE.WebGLRenderer({antialias:true});
+// antialiasing can only be chosen when the renderer is created, so read the saved quality first
+let initLite=false; try{const o=JSON.parse(localStorage.getItem('exa3dOpts2')||'null'); initLite=!!(o&&o.optQuality==='lite');}catch(e){}
+const renderer=new THREE.WebGLRenderer({antialias:!initLite});
 renderer.setPixelRatio(Math.min(2,devicePixelRatio));
 renderer.shadowMap.enabled=true;
 view.appendChild(renderer.domElement);
@@ -400,9 +412,14 @@ rebuildArena();
 
 // ---------- settings ----------
 try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) $('optShake').checked=false; }catch(e){}
-const OPT_IDS=['sens','padSens','padInvert','optSound','soundVol','optShake','shakePow','optCompass','optMini','optLanes','optNofail','optHitbox','optEndless'];
+const OPT_IDS=['optQuality','optFps','sens','padSens','padInvert','optSound','soundVol','optShake','shakePow','optCompass','optMini','optLanes','optNofail','optHitbox','optEndless'];
 try{const o=JSON.parse(localStorage.getItem('exa3dOpts2')||'null'); if(o) for(const id of OPT_IDS) if(id in o){const el=$(id); if(el.type==='checkbox') el.checked=o[id]; else el.value=o[id];}}catch(e){}
 function applyOpts(){
+  // quality: lite = 1x pixel ratio, no shadows, no panel blur (antialias off from next load)
+  const lite=$('optQuality').value==='lite';
+  renderer.setPixelRatio(lite?1:Math.min(2,devicePixelRatio)); sun.castShadow=!lite;
+  document.body.classList.toggle('lite',lite); $('fps').hidden=!$('optFps').checked;
+  if(typeof resize==='function') resize();
   // endless mode and "keep going after a hit" are mutually exclusive
   const nf=$('optNofail'); if($('optEndless').checked) nf.checked=false; nf.disabled=$('optEndless').checked;
   nf.closest('label').style.opacity=nf.disabled?'.45':'';
@@ -790,11 +807,13 @@ function drawMini(){
   mg.fillStyle='rgba(236,230,245,.12)';mg.beginPath();mg.moveTo(px,pz);mg.arc(px,pz,40,a-0.45,a+0.45);mg.closePath();mg.fill();
   mg.save();mg.translate(px,pz);mg.rotate(-facing+Math.PI);mg.fillStyle='#5fd3a8';mg.beginPath();mg.moveTo(0,-9);mg.lineTo(6,7);mg.lineTo(-6,7);mg.closePath();mg.fill();mg.restore();
 }
+let lastCasts=null;
 function updateHUD(){
   const casts=[];
   if(run.active&&run.t<run.castEnd) casts.push(['混沌の終末',run.t/run.castEnd]);
   if(run.active&&run.swirl&&run.t>=run.swirl.start&&run.t<run.swirl.end) casts.push(['終末の渦',(run.t-run.swirl.start)/(run.swirl.end-run.swirl.start)]);
-  $('casts').innerHTML=casts.map(([n,p])=>`<div class="cast"><b>${n}</b><i style="--p:${Math.min(100,p*100).toFixed(1)}%"></i></div>`).join('');
+  const ch=casts.map(([n,p])=>`<div class="cast"><b>${n}</b><i style="--p:${Math.min(100,p*100).toFixed(1)}%"></i></div>`).join('');
+  if(ch!==lastCasts){ $('casts').innerHTML=ch; lastCasts=ch; }
   const vis=run.waves.filter(w=>run.t>=w.t0), shown=vis.length?vis[vis.length-1].num:0;
   const d=Math.hypot(player.position.x,player.position.z);
   $('info').textContent=(pad.connected?'パッド接続中　':(pad.blocked?'この環境ではパッドを読めません　':''))+(run.active?(run.endless?`エンドレス ${shown}本目（ベスト ${endlessBest()}本）　`:`エクサ ${shown}/6　`):'')+`中心から ${d.toFixed(1)}y`+(run.hits&&$('optNofail').checked?`　被弾 ${run.hits}`:'');
@@ -851,7 +870,7 @@ renderSlots();
 // ---------- loop ----------
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 addEventListener('resize',resize); resize();
-let last=performance.now(), clock=0;
+let last=performance.now(), clock=0, fpsAcc=0, fpsN=0, fpsLast=performance.now();
 function frame(now){
   const real=Math.min(0.25,(now-last)/1000), dt=Math.min(0.05,real); last=now; clock+=dt;
   readPad(dt);
@@ -875,6 +894,8 @@ function frame(now){
     camera.position.x+=(Math.random()-.5)*a; camera.position.y+=(Math.random()-.5)*a; camera.position.z+=(Math.random()-.5)*a;
   }
   shake*=Math.exp(-real*14);
+  fpsAcc+=(now-fpsLast)/1000; fpsLast=now; fpsN++;
+  if(fpsAcc>=0.5){ if(!$('fps').hidden) $('fps').textContent=Math.round(fpsN/fpsAcc)+' FPS'; fpsAcc=0; fpsN=0; }
   updateCompass(); drawMini(); updateHUD();
   renderer.render(scene,camera);
   requestAnimationFrame(frame);
